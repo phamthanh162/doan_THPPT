@@ -1,8 +1,8 @@
 # ĐỒ ÁN THPPT
 
 ## Nhóm thực hiện
-- Phạm Phú Thành
-- Thành viên 2
+- Phạm Phú Thành - 23207019
+- Huỳnh Đức Trọng - 23207022
 
 ## Ngôn ngữ
 - MATLAB
