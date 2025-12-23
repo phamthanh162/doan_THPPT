@@ -1,4 +1,4 @@
-# ĐỒ ÁN THPPT
+# ĐỒ ÁN THỰC HÀNH PHƯƠNG PHÁP TÍNH
 
 ## Nhóm thực hiện
 - Phạm Phú Thành - 23207019
