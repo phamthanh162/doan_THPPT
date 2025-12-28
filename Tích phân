@@ -1,0 +1,65 @@
+% Button pushed function: RunButton_5
+function RunButton_5Pushed(app, event)
+    phuong_phap = app.ChnphngphptchphnDropDown.Value;
+    I_result = NaN;
+
+    x_data = str2num(app.NhpdliuxEditField_4.Value);
+    y_data = str2num(app.NhpdliuyEditField_4.Value);
+
+    f_str = app.NhphmsEditField.Value;
+    N = app.NhpNEditField.Value;
+    can_str = app.NhpcntnhtchphnEditField.Value;
+
+    can_parts = str2num(can_str);
+    a = can_parts(1);
+    b = can_parts(2);
+
+    is_discrete_input = ~isempty(x_data) && ~isempty(y_data);
+    is_function_input = ~isempty(f_str) && (N > 0);
+
+if is_discrete_input
+        h = x_data(2) - x_data(1);
+        if strcmp(phuong_phap, 'Hình thang')
+            I_result = h/2 * (y_data(1) + 2*sum(y_data(2:end-1)) + y_data(end));
+        elseif strcmp(phuong_phap, 'Simpson 1/3')
+            I_result = h/3 * (y_data(1) + y_data(end) ...
+                     + 4*sum(y_data(2:2:end-1)) ...
+                     + 2*sum(y_data(3:2:end-2)));
+        end
+elseif is_function_input
+        syms x
+        f_sym = str2sym(f_str);
+        f_func = matlabFunction(f_sym);
+
+        h = (b - a)/N;
+        x_points = linspace(a, b, N+1);
+        y_points = f_func(x_points);
+
+        if strcmp(phuong_phap, 'Hình thang')
+            I_result = h/2 * (y_points(1) + 2*sum(y_points(2:end-1)) + y_points(end));
+        elseif strcmp(phuong_phap, 'Simpson 1/3')
+            I_result = h/3 * (y_points(1) + y_points(end) ...
+                     + 4*sum(y_points(2:2:end-1)) ...
+                     + 2*sum(y_points(3:2:end-2)));
+        end
+end
+
+    app.KtquEditField.Value = I_result;
+end
+
+app.TchphnTab = uitab(app.TabGroup);
+app.TchphnTab.Title = 'Tích phân';
+
+app.NhpdliuxEditField_4 = uieditfield(app.TchphnTab, 'text');
+app.NhpdliuyEditField_4 = uieditfield(app.TchphnTab, 'text');
+
+app.NhphmsEditField = uieditfield(app.TchphnTab, 'text');
+app.NhpcntnhtchphnEditField = uieditfield(app.TchphnTab, 'text');
+app.NhpNEditField = uieditfield(app.TchphnTab, 'numeric');
+
+app.ChnphngphptchphnDropDown = uidropdown(app.TchphnTab);
+app.KtquEditField = uieditfield(app.TchphnTab, 'numeric');
+
+app.RunButton_5 = uibutton(app.TchphnTab, 'push');
+app.RunButton_5.ButtonPushedFcn = createCallbackFcn(app, @RunButton_5Pushed, true);
+
