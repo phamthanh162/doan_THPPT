@@ -1,6 +1,7 @@
- % Tìm nghiệm
- 
- % 1. THU THẬP DỮ LIỆU ĐẦU VÀO
+   
+    % Tìm nghiệm
+
+    % 1. THU THẬP DỮ LIỆU ĐẦU VÀO
     
     f_str = app.NhpphngtrnhEditField.Value; % Lấy phương trình dưới dạng chuỗi
     khoang_str = app.NhpkhongphnlynghimEditField.Value; % Lấy khoảng phân ly nghiệm [a, b]
@@ -202,4 +203,4 @@
         app.KtqunghimEditField.Value = NaN;
         app.SlnlpEditField.Value = so_lan_lap;
         uialert(app.UIFigure, 'Không tìm thấy nghiệm hội tụ sau 100 lần lặp.', 'Lỗi Hội tụ');
-    end 
+    end      
