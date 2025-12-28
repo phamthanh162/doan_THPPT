@@ -1,0 +1,86 @@
+% Button pushed function: RunButton_4
+function RunButton_4Pushed(app, event)
+% Đạo hàm
+% 1. THU THẬP DỮ LIỆU
+    phuong_phap = app.ChnphngphpohmDropDown.Value;
+    sai_so = app.ChngitrsaisDropDown.Value;
+    x0 = app.NhpgitrcntnhohmEditField.Value;
+    derivative_result = NaN;
+
+    x_data_discrete = str2num(app.NhpdliuxEditField_3.Value);
+    y_data_discrete = str2num(app.NhpdliuyEditField_3.Value);
+    f_str = strtrim(app.Nhphm_sEditField.Value);
+    h = app.Nhpbc_hEditField.Value;
+
+    is_discrete_input = ~isempty(x_data_discrete) && ~isempty(y_data_discrete);
+    is_function_input = ~isempty(f_str) && ~isnan(h) && (h > 0);
+
+    if is_discrete_input && is_function_input
+        uialert(app.UIFigure, 'Vui lòng chỉ nhập MỘT trong hai bộ dữ liệu.', 'Lỗi Đầu vào');
+        return;
+    elseif ~is_discrete_input && ~is_function_input
+        uialert(app.UIFigure, 'Vui lòng nhập Dữ liệu rời rạc HOẶC Hàm số/Bước h.', 'Lỗi Đầu vào');
+        return;
+    end
+
+% TH1: Dữ liệu rời rạc
+if is_discrete_input
+        x_data = x_data_discrete;
+        y_data = y_data_discrete;
+
+        [val, i] = min(abs(x_data - x0));
+        f_i = y_data(i);
+        h_discrete = x_data(2) - x_data(1);
+
+        if strcmp(phuong_phap, 'Xấp xỉ tiến')
+            if strcmp(sai_so, 'O(h)')
+                derivative_result = (y_data(i+1) - f_i) / h_discrete;
+            else
+                derivative_result = (-y_data(i+2) + 4*y_data(i+1) - 3*f_i) / (2*h_discrete);
+            end
+        elseif strcmp(phuong_phap, 'Xấp xỉ lùi')
+            if strcmp(sai_so, 'O(h)')
+                derivative_result = (f_i - y_data(i-1)) / h_discrete;
+            else
+                derivative_result = (3*f_i - 4*y_data(i-1) + y_data(i-2)) / (2*h_discrete);
+            end
+        elseif strcmp(phuong_phap, 'Xấp xỉ trung tâm')
+            derivative_result = (y_data(i+1) - y_data(i-1)) / (2*h_discrete);
+        end
+
+% TH2: Hàm số
+elseif is_function_input
+        syms x
+        f_sym = str2sym(f_str);
+        f_func = matlabFunction(f_sym);
+        f_x0 = f_func(x0);
+
+        if strcmp(phuong_phap, 'Xấp xỉ tiến')
+            derivative_result = (f_func(x0 + h) - f_x0) / h;
+        elseif strcmp(phuong_phap, 'Xấp xỉ lùi')
+            derivative_result = (f_x0 - f_func(x0 - h)) / h;
+        elseif strcmp(phuong_phap, 'Xấp xỉ trung tâm')
+            derivative_result = (f_func(x0 + h) - f_func(x0 - h)) / (2*h);
+        end
+end
+
+    app.KtquTextArea.Value = sprintf('%.8f', derivative_result);
+end
+
+app.ohmTab = uitab(app.TabGroup);
+app.ohmTab.Title = 'Đạo hàm';
+
+app.Nhphm_sEditField = uieditfield(app.ohmTab, 'text');
+app.Nhpbc_hEditField = uieditfield(app.ohmTab, 'numeric');
+app.NhpdliuxEditField_3 = uieditfield(app.ohmTab, 'text');
+app.NhpdliuyEditField_3 = uieditfield(app.ohmTab, 'text');
+
+app.ChnphngphpohmDropDown = uidropdown(app.ohmTab);
+app.ChngitrsaisDropDown = uidropdown(app.ohmTab);
+
+app.NhpgitrcntnhohmEditField = uieditfield(app.ohmTab, 'numeric');
+app.KtquTextArea = uitextarea(app.ohmTab);
+
+app.RunButton_4 = uibutton(app.ohmTab, 'push');
+app.RunButton_4.ButtonPushedFcn = createCallbackFcn(app, @RunButton_4Pushed, true);
+
