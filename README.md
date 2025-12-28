@@ -9,7 +9,7 @@
 
 ## Mô tả
 - Repository dùng để lưu trữ và làm việc nhóm cho đồ án môn THPPT.
-- Đồ án thực hiện giao diện giải hàm và dữ liệu bằng các phương pháp tính.
+- Đồ án sử dụng Matlab thực hiện giao diện giải hàm và dữ liệu bằng các phương pháp tính.
 
 ## Cấu trúc thư mục
 - src/: mã nguồn MATLAB
