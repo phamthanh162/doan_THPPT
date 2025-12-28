@@ -1,1 +1,190 @@
+    
+    % Hồi quy
+
+    % 1. THU THẬP VÀ XỬ LÝ DỮ LIỆU ĐẦU VÀO
+    
+    try
+        % Lấy dữ liệu X và Y 
+        x_data = str2num(app.NhpdliuxEditField_2.Value); 
+        y_data = str2num(app.NhpdliuyEditField_2.Value);
+        
+        % Lấy giá trị cần dự đoán
+        x_predict = app.NhpgitrcndonEditField.Value;
+        
+        phuong_phap = app.ChnphngphpnisuyDropDown_2.Value; 
+        
+        if isempty(x_data) || isempty(y_data) || length(x_data) ~= length(y_data)
+            uialert(app.UIFigure, 'Vui lòng nhập dữ liệu x và y hợp lệ (cùng kích thước).', 'Lỗi Dữ liệu');
+            return;
+        end
+        n = length(x_data);
+    catch ME
+        uialert(app.UIFigure, ['Lỗi nhập liệu: ' ME.message], 'Lỗi Đầu vào');
+        return;
+    end
+    
+    % Khởi tạo các biến
+    syms x;
+    P_sym = 0; 
+    reg_str = ''; % Chuỗi phương trình hồi quy
+    y_predict = NaN;
+    
+    % Tính các tổng cần thiết cho Hồi quy Tuyến tính cơ bản: Y = a0 + a1*X
+    sum_x = sum(x_data);
+    sum_y = sum(y_data);
+    sum_x2 = sum(x_data.^2);
+    sum_xy = sum(x_data .* y_data);
+    
+    % Ma trận hệ số [n sum(x); sum(x) sum(x^2)]
+    D = n * sum_x2 - sum_x^2;
+    
+    if D == 0
+        uialert(app.UIFigure, 'Dữ liệu không đủ hoặc trùng lặp, không thể thực hiện hồi quy tuyến tính.', 'Lỗi Thuật toán');
+        return;
+    end
+
+
+    
+    % 2. THỰC HIỆN TÍNH TOÁN HỒI QUY
+    
+    if strcmp(phuong_phap, 'tuyến tính') % HỒI QUY TUYẾN TÍNH: Y = a0 + a1*X 
+        
+        a1 = (n * sum_xy - sum_x * sum_y) / D;
+        a0 = (sum_y * sum_x2 - sum_x * sum_xy) / D;
+        
+        P_sym = a0 + a1 * x;
+        reg_str = sprintf('Y = %.4f + %.4f * X', a0, a1);
+        
+    elseif strcmp(phuong_phap, 'hàm mũ') % HỒI QUY HÀM MŨ: Y = a*e^(b*X) (Tuyến tính hóa: ln(Y) = ln(a) + b*X)
+        
+        % Kiểm tra và xử lý logarit của Y
+        if any(y_data <= 0)
+            uialert(app.UIFigure, 'Giá trị Y phải > 0 để thực hiện Hồi quy Hàm Mũ.', 'Lỗi Dữ liệu');
+            return;
+        end
+        Y_star = log(y_data); % Y* = ln(Y)
+        
+        % Tính các tổng mới cho mô hình Y* = A0 + A1*X
+        sum_Y_star = sum(Y_star);
+        sum_X_Y_star = sum(x_data .* Y_star);
+        
+        % Tính A1 (b) và A0 (ln(a))
+        A1 = (n * sum_X_Y_star - sum_x * sum_Y_star) / D; % A1 = b
+        A0 = (sum_Y_star * sum_x2 - sum_x * sum_X_Y_star) / D; % A0 = ln(a)
+        
+        b = A1;
+        a = exp(A0);
+        
+        P_sym = a * exp(b * x);
+        reg_str = sprintf('Y = %.4f * e^(%.4f * X)', a, b);
+        
+    elseif strcmp(phuong_phap, 'Logarit') % HỒI QUY LOGARIT: Y = a0 + a1*ln(X) (Tuyến tính hóa: Y = a0 + a1*X*)
+        
+        % Kiểm tra và xử lý logarit của X
+        if any(x_data <= 0)
+            uialert(app.UIFigure, 'Giá trị X phải > 0 để thực hiện Hồi quy Logarit.', 'Lỗi Dữ liệu');
+            return;
+        end
+        X_star = log(x_data); % X* = ln(X)
+        
+        % Tính các tổng mới cho mô hình Y = a0 + a1*X*
+        sum_X_star = sum(X_star);
+        sum_X_star2 = sum(X_star.^2);
+        sum_Y_X_star = sum(y_data .* X_star);
+        
+        % Ma trận hệ số mới [n sum(X*); sum(X*) sum(X*^2)]
+        D_star = n * sum_X_star2 - sum_X_star^2;
+        
+        if D_star == 0
+            uialert(app.UIFigure, 'Dữ liệu ln(X) không đủ hoặc trùng lặp.', 'Lỗi Thuật toán');
+            return;
+        end
+        
+        % Tính a1 và a0
+        a1 = (n * sum_Y_X_star - sum_X_star * sum_y) / D_star;
+        a0 = (sum_y * sum_X_star2 - sum_X_star * sum_Y_X_star) / D_star;
+        
+        P_sym = a0 + a1 * log(x);
+        reg_str = sprintf('Y = %.4f + %.4f * ln(X)', a0, a1);
+        
+    end
+    
+
+    
+    % 3. TÍNH KẾT QUẢ DỰ ĐOÁN
+    
+    if ~isnan(P_sym)
+        % Chuyển đa thức về dạng hàm MATLAB để tính giá trị số
+        P_func = matlabFunction(P_sym);
+        
+        % Kiểm tra điều kiện đầu vào cho hàm mũ/logarit khi dự đoán
+        if strcmp(phuong_phap, 'Logarit') && x_predict <= 0
+            uialert(app.UIFigure, 'Giá trị dự đoán X phải > 0 cho Hồi quy Logarit.', 'Lỗi Dự đoán');
+            y_predict = NaN;
+        else
+            y_predict = P_func(x_predict);
+        end
+    end
+
+
+    
+    % 4. HIỂN THỊ KẾT QUẢ
+    
+    app.KtquphngtrnhhiquyTextArea.Value = reg_str;
+    app.KtqudonEditField.Value = y_predict;
+    
+
+
+    % 5. VẼ ĐỒ THỊ     
+
+    try
+        % Tạo khoảng X để vẽ đồ thị 
+        x_min = min(x_data);
+        x_max = max(x_data);
+        
+        % Nếu hồi quy logarit và có giá trị dự đoán cần vẽ
+        if strcmp(phuong_phap, 'Logarit') && x_predict > x_max
+            x_max = x_predict;
+        elseif strcmp(phuong_phap, 'Logarit') && x_predict < x_min
+             x_min = x_predict;
+        end
+        
+        % Điều chỉnh cho đồ thị đẹp hơn
+        plot_min = x_min - 0.1 * (x_max - x_min);
+        plot_max = x_max + 0.1 * (x_max - x_min);
+        
+        % Đảm bảo x > 0 cho logarit
+        if strcmp(phuong_phap, 'Logarit') && plot_min <= 0
+             plot_min = 0.001; % Đặt cận dưới > 0
+        end
+
+        X_plot = linspace(plot_min, plot_max, 500); 
+        Y_plot = P_func(X_plot);
+        
+        % Xóa đồ thị cũ và thiết lập lại
+        cla(app.UIAxes2_2);
+        
+        % Vẽ Hàm Hồi quy (Đường cong)
+        plot(app.UIAxes2_2, X_plot, Y_plot, 'b-', 'LineWidth', 2, 'DisplayName', 'Hàm Hồi quy'); 
+        hold(app.UIAxes2_2, 'on'); 
+        
+        % Vẽ Dữ liệu thực
+        scatter(app.UIAxes2_2, x_data, y_data, 80, 'ro', 'filled', 'DisplayName', 'Dữ liệu thực'); 
+        
+        % Đánh dấu giá trị dự đoán
+        if ~isnan(y_predict)
+            scatter(app.UIAxes2_2, x_predict, y_predict, 100, 'gx', 'LineWidth', 2, 'DisplayName', 'Giá trị dự đoán');
+        end
+        
+        % Thiết lập tiêu đề và nhãn
+        title(app.UIAxes2_2, ['Hồi quy ' phuong_phap]);
+        xlabel(app.UIAxes2_2, 'X');
+        ylabel(app.UIAxes2_2, 'Y');
+        legend(app.UIAxes2_2, 'show', 'Location', 'best');
+        grid(app.UIAxes2_2, 'on');
+        hold(app.UIAxes2_2, 'off');
+        
+    catch ME_plot
+        uialert(app.UIFigure, ['Lỗi khi vẽ đồ thị: ' ME_plot.message], 'Lỗi Đồ thị');
+    end
 
