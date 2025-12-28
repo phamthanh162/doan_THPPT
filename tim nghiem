@@ -1,0 +1,205 @@
+ % Tìm nghiệm
+ 
+ % 1. THU THẬP DỮ LIỆU ĐẦU VÀO
+    
+    f_str = app.NhpphngtrnhEditField.Value; % Lấy phương trình dưới dạng chuỗi
+    khoang_str = app.NhpkhongphnlynghimEditField.Value; % Lấy khoảng phân ly nghiệm [a, b]
+    
+    % Chuyển chuỗi khoảng phân ly thành 2 giá trị số [a, b]
+    try
+        % Nhập chuỗi bằng dấu phẩy, nếu không được thì cách nhau bằng khoảng trắng
+        khoang_parts = strsplit(khoang_str, ',');
+        if length(khoang_parts) ~= 2
+             khoang_parts = strsplit(khoang_str, ' ');
+        end
+
+        a = str2double(strtrim(khoang_parts{1}));
+        b = str2double(strtrim(khoang_parts{2}));
+        if isnan(a) || isnan(b)
+             uialert(app.UIFigure, 'Vui lòng nhập khoảng [a, b] đúng định dạng (ví dụ: 1, 2)','Lỗi đầu vào');
+             return;
+        end
+    catch
+        uialert(app.UIFigure, 'Vui lòng nhập khoảng [a, b] đúng định dạng (ví dụ: 1, 2)','Lỗi đầu vào');
+        return;
+    end
+    
+    % Lấy sai số cho phép
+    epsilon = app.NhpsaischophpEditField.Value;
+    
+    % Lấy phương pháp đã chọn
+    phuong_phap = app.ChnphngphptmDropDown.Value;
+    
+    % Khởi tạo hàm f(x)
+    f = str2sym(f_str);
+    f_func = matlabFunction(f);
+    
+    % Khởi tạo biến kết quả
+    x_nghiem = NaN;
+    so_lan_lap = 0;
+    
+
+    
+    % 2. VẼ ĐỒ THỊ TRƯỚC KHI TÌM NGHIỆM
+    
+    try
+        % Tạo khoảng X để vẽ đồ thị
+        plot_min = min(a, b) - 0.5;
+        plot_max = max(a, b) + 0.5;
+        X = linspace(plot_min, plot_max, 500); 
+        Y = f_func(X);
+        
+        % Vẽ đồ thị
+        plot(app.UIAxes, X, Y, 'LineWidth', 2);
+        hold(app.UIAxes, 'on'); 
+        plot(app.UIAxes, [plot_min plot_max], [0 0], 'r--');
+        
+        % Đánh dấu khoảng [a, b]
+        plot(app.UIAxes, [a a], ylim(app.UIAxes), 'g:'); 
+        plot(app.UIAxes, [b b], ylim(app.UIAxes), 'g:'); 
+        
+        title(app.UIAxes, 'Đồ thị hàm số và Khoảng phân ly');
+        xlabel(app.UIAxes, 'X');
+        ylabel(app.UIAxes, 'Y');
+        hold(app.UIAxes, 'off');
+        
+    catch ME
+        uialert(app.UIFigure, ['Lỗi khi vẽ đồ thị: ' ME.message], 'Lỗi Đồ thị');
+        return;
+    end
+    
+    
+
+    % 3. THỰC HIỆN TÍNH TOÁN NGHIỆM SỐ
+    
+    if strcmp(phuong_phap, 'Chia đôi') % PHƯƠNG PHÁP CHIA ĐÔI   
+
+        % Kiểm tra điều kiện phân ly nghiệm
+        if f_func(a) * f_func(b) > 0
+            uialert(app.UIFigure, 'f(a) và f(b) cùng dấu. Vui lòng chọn khoảng phân ly nghiệm khác.', 'Lỗi Thuật toán');
+            return;
+        end
+        
+        c = (a + b) / 2;
+        so_lan_lap = 0;
+        
+        while (b - a) / 2 > epsilon
+            so_lan_lap = so_lan_lap + 1;
+            c = (a + b) / 2;
+            
+            if f_func(c) == 0
+                break;
+            elseif f_func(a) * f_func(c) < 0
+                b = c;
+            else
+                a = c;
+            end
+        end
+        x_nghiem = (a + b) / 2;
+        
+    elseif strcmp(phuong_phap, 'Lặp') % PHƯƠNG PHÁP LẶP
+        
+        % Yêu cầu nhập giá trị khởi tạo x0
+        x0 = (a + b) / 2; 
+        
+        % Lấy đạo hàm của f(x) 
+        syms x
+        f_sym = str2sym(f_str);
+        
+        % Hàm lặp đơn giản: x = g(x). Ta chọn g(x) sao cho |g'(x)| < 1 trên [a, b].
+        df_sym = diff(f_sym, x);
+        df_func = matlabFunction(df_sym);
+        
+        % Chọn c = 1/max|f'(x)| trên [a, b].
+        if abs(df_func(x0)) < 1e-6
+            uialert(app.UIFigure, 'Đạo hàm tại điểm khởi tạo quá nhỏ. Thử phương pháp khác hoặc khoảng khác.', 'Lỗi Thuật toán');
+            return;
+        end
+        
+        c = 1 / df_func(x0);
+        g_sym = x - c * f_sym;
+        g_func = matlabFunction(g_sym);
+        
+        % Kiểm tra điều kiện lặp: |g'(x)| < 1
+        dg_sym = diff(g_sym, x);
+        dg_func = matlabFunction(dg_sym);
+
+        % Kiểm tra |g'(x)| tại 2 cận
+        if abs(dg_func(a)) >= 1 || abs(dg_func(b)) >= 1 
+            uialert(app.UIFigure, 'Điều kiện hội tụ |g''(x)| < 1 không đảm bảo trên khoảng này. Thử khoảng khác.', 'Lỗi Hội tụ');
+            return;
+        end
+        
+        x_prev = x0;
+        so_lan_lap = 0;
+        
+        for k = 1:100 % Giới hạn số lần lặp
+            x_curr = g_func(x_prev);
+            so_lan_lap = k;
+            
+            if abs(x_curr - x_prev) < epsilon
+                x_nghiem = x_curr;
+                break;
+            end
+            x_prev = x_curr;
+        end
+        
+    elseif strcmp(phuong_phap, 'Newton (tiếp tuyến)') % PHƯƠNG PHÁP NEWTON
+        
+        % Yêu cầu nhập giá trị khởi tạo x0 
+        x0 = (a + b) / 2; 
+        
+        % Lấy đạo hàm của f(x) 
+        syms x
+        f_sym = str2sym(f_str);
+        df_sym = diff(f_sym, x);
+        
+        f_func = matlabFunction(f_sym);
+        df_func = matlabFunction(df_sym);
+        
+        x_prev = x0;
+        so_lan_lap = 0;
+        
+        for k = 1:100 % Giới hạn số lần lặp
+            so_lan_lap = k;
+            
+            % Kiểm tra đạo hàm f'(x) khác 0
+            df_val = df_func(x_prev);
+            if abs(df_val) < 1e-8
+                uialert(app.UIFigure, 'Đạo hàm f''(x) gần bằng 0. Thuật toán không hội tụ.', 'Lỗi Thuật toán');
+                return;
+            end
+            
+            x_curr = x_prev - f_func(x_prev) / df_val;
+            
+            if abs(x_curr - x_prev) < epsilon
+                x_nghiem = x_curr;
+                break;
+            end
+            x_prev = x_curr;
+        end
+        
+    end
+
+
+    
+    % 4. HIỂN THỊ KẾT QUẢ VÀ ĐÁNH DẤU TRÊN ĐỒ THỊ
+    
+    if ~isnan(x_nghiem)
+
+        % Hiển thị nghiệm (đã hội tụ)
+        app.KtqunghimEditField.Value = x_nghiem;
+        app.SlnlpEditField.Value = so_lan_lap;
+        
+        % Đánh dấu nghiệm trên đồ thị 
+        hold(app.UIAxes, 'on'); 
+        plot(app.UIAxes, x_nghiem, f_func(x_nghiem), 'go', 'MarkerSize', 8, 'LineWidth', 2);
+        hold(app.UIAxes, 'off');
+
+    else
+
+        % Hiển thị nếu không hội tụ
+        app.KtqunghimEditField.Value = NaN;
+        app.SlnlpEditField.Value = so_lan_lap;
+        uialert(app.UIFigure, 'Không tìm thấy nghiệm hội tụ sau 100 lần lặp.', 'Lỗi Hội tụ');
+    end 
