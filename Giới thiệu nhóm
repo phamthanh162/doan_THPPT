@@ -1,0 +1,53 @@
+% Tab GIỚI THIỆU
+app.GithiuTab = uitab(app.TabGroup);
+app.GithiuTab.Title = 'Giới thiệu';
+
+% Tiêu đề
+app.Label = uilabel(app.GithiuTab);
+app.Label.Text = 'ĐỒ ÁN THỰC HÀNH PHƯƠNG PHÁP TÍNH';
+app.Label.FontSize = 18;
+app.Label.FontWeight = 'bold';
+app.Label.Position = [250 400 500 30];
+
+% Thông tin môn học
+app.Label_2 = uilabel(app.GithiuTab);
+app.Label_2.Text = 'Môn học: Thực hành Phương pháp tính';
+app.Label_2.FontSize = 14;
+app.Label_2.Position = [280 360 400 25];
+
+% Thông tin GVHD
+app.Label_3 = uilabel(app.GithiuTab);
+app.Label_3.Text = 'Giảng viên hướng dẫn: ................................';
+app.Label_3.FontSize = 14;
+app.Label_3.Position = [280 330 400 25];
+
+% Thông tin nhóm
+app.Label_4 = uilabel(app.GithiuTab);
+app.Label_4.Text = 'NHÓM THỰC HIỆN';
+app.Label_4.FontSize = 16;
+app.Label_4.FontWeight = 'bold';
+app.Label_4.Position = [330 280 200 25];
+
+% Thành viên 1
+app.Label_5 = uilabel(app.GithiuTab);
+app.Label_5.Text = '1. Huỳnh Đức Trọng – MSSV: 23207022';
+app.Label_5.FontSize = 14;
+app.Label_5.Position = [260 240 450 25];
+
+% Thành viên 2
+app.Label_6 = uilabel(app.GithiuTab);
+app.Label_6.Text = '2. Phạm Phú Thành – MSSV: 23207019';
+app.Label_6.FontSize = 14;
+app.Label_6.Position = [260 210 450 25];
+
+% Thành viên 3
+app.Label_7 = uilabel(app.GithiuTab);
+app.Label_7.Text = '3. .................................................';
+app.Label_7.FontSize = 14;
+app.Label_7.Position = [260 180 450 25];
+
+% Năm học
+app.Label_8 = uilabel(app.GithiuTab);
+app.Label_8.Text = 'Năm học: 2024 – 2025';
+app.Label_8.FontSize = 14;
+app.Label_8.Position = [320 120 250 25];
